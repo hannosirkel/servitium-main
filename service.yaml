@@ -6,12 +6,11 @@ metadata:
   labels:
     app.kubernetes.io/name: servitium
 spec:
-  type: NodePort
+  type: LoadBalancer
   selector:
     app.kubernetes.io/name: servitium
   ports:
     - name: http
       port: 8099
-      nodePort: 30099
       protocol: TCP
       targetPort: http
