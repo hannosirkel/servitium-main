@@ -1,0 +1,25 @@
+---
+name: Validate
+
+'on':
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  manifests:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        # actions/checkout v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Validate rendered manifests
+        run: |
+          set -euo pipefail
+          bash tests/manifests.sh
+          kubectl kustomize . >/dev/null
