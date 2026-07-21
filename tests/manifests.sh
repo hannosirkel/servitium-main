@@ -85,17 +85,14 @@ raise 'secret projection mismatch' unless
   ]
 
 service = resource(documents, 'Service', 'servitium')
-raise 'service must remain LoadBalancer' unless
-  service.dig('spec', 'type') == 'LoadBalancer'
-raise 'service must not allocate NodePorts' unless
-  service.dig('spec', 'allocateLoadBalancerNodePorts') == false
-raise 'service must not allocate a health-check NodePort' unless
-  service.dig('spec', 'externalTrafficPolicy') == 'Cluster'
+raise 'service must remain ClusterIP' unless
+  service.dig('spec', 'type') == 'ClusterIP'
+raise 'WireGuard-only service address mismatch' unless
+  service.dig('spec', 'externalIPs') == ['192.168.21.2']
 raise 'service port mismatch' unless service.dig('spec', 'ports') == [{
-  'name' => 'http', 'nodePort' => nil, 'port' => 8099, 'protocol' => 'TCP',
-  'targetPort' => 'http'
+  'name' => 'http', 'port' => 8099, 'protocol' => 'TCP', 'targetPort' => 'http'
 }]
-forbidden_service_keys = %w[externalName externalIPs loadBalancerIP loadBalancerClass]
+forbidden_service_keys = %w[externalName loadBalancerIP loadBalancerClass]
 raise 'explicit service addresses are forbidden' if
   forbidden_service_keys.any? { |key| service.fetch('spec').key?(key) }
 
@@ -108,14 +105,6 @@ raise 'WireGuard ingress mismatch' unless ingress.dig('spec', 'ingress') == [{
   'from' => [
     { 'ipBlock' => { 'cidr' => '192.168.21.0/24' } },
     { 'ipBlock' => { 'cidr' => '192.168.1.0/24' } },
-    {
-      'namespaceSelector' => { 'matchLabels' => {
-        'kubernetes.io/metadata.name' => 'kube-system'
-      } },
-      'podSelector' => { 'matchLabels' => {
-        'svccontroller.k3s.cattle.io/svcname' => 'servitium'
-      } },
-    },
   ],
   'ports' => [{ 'port' => 8099, 'protocol' => 'TCP' }],
 }]
