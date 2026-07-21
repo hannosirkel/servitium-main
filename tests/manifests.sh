@@ -104,6 +104,7 @@ ingress = resource(documents, 'NetworkPolicy', 'allow-wireguard-http')
 raise 'WireGuard ingress mismatch' unless ingress.dig('spec', 'ingress') == [{
   'from' => [
     { 'ipBlock' => { 'cidr' => '192.168.21.0/24' } },
+    { 'ipBlock' => { 'cidr' => '192.168.1.0/24' } },
     {
       'namespaceSelector' => { 'matchLabels' => {
         'kubernetes.io/metadata.name' => 'kube-system'
