@@ -44,9 +44,8 @@ raise 'pod identity mismatch' unless pod['securityContext'] == {
 }
 
 container = pod.fetch('containers').fetch(0)
-sentinel = 'sha256:' + ('0' * 64)
-raise 'image must use the bootstrap digest sentinel' unless
-  container['image'] == "ghcr.io/hannosirkel/servitium@#{sentinel}"
+raise 'image must use an immutable digest' unless
+  container['image'].match?(/\Aghcr\.io\/hannosirkel\/servitium@sha256:[0-9a-f]{64}\z/)
 raise 'container port exposure mismatch' unless container['ports'] == [{
   'name' => 'http', 'containerPort' => 8099, 'protocol' => 'TCP'
 }]
@@ -86,14 +85,15 @@ raise 'secret projection mismatch' unless
   ]
 
 service = resource(documents, 'Service', 'servitium')
-raise 'service must remain ClusterIP' unless service.dig('spec', 'type') == 'ClusterIP'
-raise 'WireGuard-only service address mismatch' unless
-  service.dig('spec', 'externalIPs') == ['192.168.21.2']
+raise 'service must remain LoadBalancer' unless
+  service.dig('spec', 'type') == 'LoadBalancer'
+raise 'service must preserve WireGuard client addresses' unless
+  service.dig('spec', 'externalTrafficPolicy') == 'Local'
 raise 'service port mismatch' unless service.dig('spec', 'ports') == [{
   'name' => 'http', 'port' => 8099, 'protocol' => 'TCP', 'targetPort' => 'http'
 }]
-forbidden_service_keys = %w[externalName loadBalancerIP loadBalancerClass]
-raise 'public service exposure is forbidden' if
+forbidden_service_keys = %w[externalName externalIPs loadBalancerIP loadBalancerClass]
+raise 'explicit service addresses are forbidden' if
   forbidden_service_keys.any? { |key| service.fetch('spec').key?(key) }
 
 default_deny = resource(documents, 'NetworkPolicy', 'default-deny')
