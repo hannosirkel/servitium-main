@@ -87,10 +87,13 @@ raise 'secret projection mismatch' unless
 service = resource(documents, 'Service', 'servitium')
 raise 'service must remain LoadBalancer' unless
   service.dig('spec', 'type') == 'LoadBalancer'
-raise 'service must preserve WireGuard client addresses' unless
-  service.dig('spec', 'externalTrafficPolicy') == 'Local'
+raise 'service must not allocate NodePorts' unless
+  service.dig('spec', 'allocateLoadBalancerNodePorts') == false
+raise 'service must not allocate a health-check NodePort' unless
+  service.dig('spec', 'externalTrafficPolicy') == 'Cluster'
 raise 'service port mismatch' unless service.dig('spec', 'ports') == [{
-  'name' => 'http', 'port' => 8099, 'protocol' => 'TCP', 'targetPort' => 'http'
+  'name' => 'http', 'nodePort' => nil, 'port' => 8099, 'protocol' => 'TCP',
+  'targetPort' => 'http'
 }]
 forbidden_service_keys = %w[externalName externalIPs loadBalancerIP loadBalancerClass]
 raise 'explicit service addresses are forbidden' if

@@ -7,11 +7,13 @@ metadata:
     app.kubernetes.io/name: servitium
 spec:
   type: LoadBalancer
-  externalTrafficPolicy: Local
+  allocateLoadBalancerNodePorts: false
+  externalTrafficPolicy: Cluster
   selector:
     app.kubernetes.io/name: servitium
   ports:
     - name: http
+      nodePort: null
       port: 8099
       protocol: TCP
       targetPort: http
