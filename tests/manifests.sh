@@ -102,7 +102,17 @@ raise 'default deny mismatch' unless
 
 ingress = resource(documents, 'NetworkPolicy', 'allow-wireguard-http')
 raise 'WireGuard ingress mismatch' unless ingress.dig('spec', 'ingress') == [{
-  'from' => [{ 'ipBlock' => { 'cidr' => '192.168.21.0/24' } }],
+  'from' => [
+    { 'ipBlock' => { 'cidr' => '192.168.21.0/24' } },
+    {
+      'namespaceSelector' => { 'matchLabels' => {
+        'kubernetes.io/metadata.name' => 'kube-system'
+      } },
+      'podSelector' => { 'matchLabels' => {
+        'svccontroller.k3s.cattle.io/svcname' => 'servitium'
+      } },
+    },
+  ],
   'ports' => [{ 'port' => 8099, 'protocol' => 'TCP' }],
 }]
 
