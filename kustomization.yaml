@@ -10,4 +10,4 @@ resources:
 images:
   - name: ghcr.io/hannosirkel/servitium
     newName: ghcr.io/hannosirkel/servitium
-    digest: sha256:bf7f4cbbe04eaa49c2dd75e0abbc251424ee5de53b244f2f2a41ec22e37ac519
+    digest: sha256:0ad487126d016c4427dd0fb80adb9322c4f94489449b261964ccdb22dd56ca7b
