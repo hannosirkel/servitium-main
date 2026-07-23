@@ -89,6 +89,7 @@ def assert_manifest(path, name:, namespace:, port:, database:, user:, secret:, l
     'MYSQL_PORT' => '3306',
     'MYSQL_DATABASE' => database,
     'MYSQL_USER' => user,
+    'PORT' => port.to_s,
   }
   mount = container.fetch('volumeMounts').fetch(0)
   raise 'secret mount mismatch' unless mount == {

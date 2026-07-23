@@ -20,6 +20,8 @@ spec:
       containers:
         - name: servitium
           env:
+            - name: PORT
+              value: "8098"
             - name: MYSQL_DATABASE
               value: servitium_test
             - name: MYSQL_USER
