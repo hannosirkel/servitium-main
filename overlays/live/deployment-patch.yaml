@@ -3,19 +3,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: servitium
-  labels:
-    app.kubernetes.io/name: servitium
-    app.kubernetes.io/instance: live
 spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: servitium
-      app.kubernetes.io/instance: live
   template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: servitium
-        app.kubernetes.io/instance: live
     spec:
       containers:
         - name: servitium
@@ -48,10 +37,6 @@ kind: NetworkPolicy
 metadata:
   name: allow-wireguard-http
 spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: servitium
-      app.kubernetes.io/instance: live
   ingress:
     - from:
         - ipBlock:
@@ -66,18 +51,8 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-dns-egress
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: servitium
-      app.kubernetes.io/instance: live
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-mysql-egress
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: servitium
-      app.kubernetes.io/instance: live

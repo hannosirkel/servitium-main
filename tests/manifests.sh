@@ -37,7 +37,7 @@ def resource(documents, kind, name)
   matches.first
 end
 
-def assert_manifest(path, name:, namespace:, port:, database:, user:, secret:, instance:)
+def assert_manifest(path, name:, namespace:, port:, database:, user:, secret:, labels:)
   documents = YAML.load_stream(File.read(path)).compact
 
   raise 'Namespace resources are owned by Orange/Ansible' if documents.any? { |item| item['kind'] == 'Namespace' }
@@ -47,10 +47,7 @@ def assert_manifest(path, name:, namespace:, port:, database:, user:, secret:, i
   deployment = resource(documents, 'Deployment', name)
   spec = deployment.fetch('spec')
   raise 'deployment must use Recreate' unless spec['strategy'] == { 'type' => 'Recreate' }
-  expected_labels = {
-    'app.kubernetes.io/name' => 'servitium',
-    'app.kubernetes.io/instance' => instance,
-  }
+  expected_labels = labels
   raise 'deployment selector mismatch' unless spec.dig('selector', 'matchLabels') == expected_labels
   raise 'pod labels mismatch' unless spec.dig('template', 'metadata', 'labels') == expected_labels
   pod = spec.dig('template', 'spec')
@@ -117,6 +114,7 @@ def assert_manifest(path, name:, namespace:, port:, database:, user:, secret:, i
   }]
   forbidden_service_keys = %w[externalName loadBalancerIP loadBalancerClass]
   raise 'public service exposure is forbidden' if forbidden_service_keys.any? { |key| service.fetch('spec').key?(key) }
+  raise 'explicit Service NodePort is forbidden' if service.fetch('spec').fetch('ports').any? { |item| item.key?('nodePort') }
 
   policy_suffix = name == 'servitium' ? '' : '-test'
   default_deny = resource(documents, 'NetworkPolicy', "default-deny#{policy_suffix}")
@@ -134,11 +132,18 @@ def assert_manifest(path, name:, namespace:, port:, database:, user:, secret:, i
 
   dns = resource(documents, 'NetworkPolicy', "allow-dns-egress#{policy_suffix}")
   raise 'DNS policy selector mismatch' unless dns.dig('spec', 'podSelector', 'matchLabels') == expected_labels
-  dns_ports = dns.dig('spec', 'egress', 0, 'ports')
-  raise 'DNS egress mismatch' unless dns_ports == [
-    { 'port' => 53, 'protocol' => 'UDP' },
-    { 'port' => 53, 'protocol' => 'TCP' },
-  ]
+  raise 'DNS egress mismatch' unless dns.dig('spec', 'egress') == [{
+    'to' => [{
+      'namespaceSelector' => { 'matchLabels' => {
+        'kubernetes.io/metadata.name' => 'kube-system',
+      } },
+      'podSelector' => { 'matchLabels' => { 'k8s-app' => 'kube-dns' } },
+    }],
+    'ports' => [
+      { 'port' => 53, 'protocol' => 'UDP' },
+      { 'port' => 53, 'protocol' => 'TCP' },
+    ],
+  }]
   mysql = resource(documents, 'NetworkPolicy', "allow-mysql-egress#{policy_suffix}")
   raise 'MySQL policy selector mismatch' unless mysql.dig('spec', 'podSelector', 'matchLabels') == expected_labels
   raise 'MySQL egress mismatch' unless mysql.dig('spec', 'egress') == [{
@@ -156,12 +161,17 @@ end
 assert_manifest(
   ARGV.fetch(0),
   name: 'servitium', namespace: 'servitium', port: 8099,
-  database: 'servitium', user: 'servitium', secret: 'servitium-secrets', instance: 'live',
+  database: 'servitium', user: 'servitium', secret: 'servitium-secrets',
+  labels: { 'app.kubernetes.io/name' => 'servitium' },
 )
 assert_manifest(
   ARGV.fetch(1),
   name: 'servitium-test', namespace: 'servitium-test', port: 8098,
-   database: 'servitium_test', user: 'servitium-test', secret: 'servitium-test-secrets', instance: 'test',
- )
+  database: 'servitium_test', user: 'servitium-test', secret: 'servitium-test-secrets',
+  labels: {
+    'app.kubernetes.io/name' => 'servitium',
+    'app.kubernetes.io/instance' => 'test',
+  },
+)
 puts 'manifest contract tests passed'
 RUBY

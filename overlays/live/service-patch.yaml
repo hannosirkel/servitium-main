@@ -4,12 +4,6 @@ kind: Service
 metadata:
   name: servitium
 spec:
-  type: ClusterIP
-  externalIPs:
-    - 192.168.21.2
-  selector:
-    app.kubernetes.io/name: servitium
-    app.kubernetes.io/instance: live
   ports:
     - name: http
       port: 8099
