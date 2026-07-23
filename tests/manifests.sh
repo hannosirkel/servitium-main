@@ -65,6 +65,8 @@ def assert_manifest(path, name:, namespace:, port:, database:, user:, secret:, l
   container = pod.fetch('containers').fetch(0)
   raise 'image must use a pinned non-zero digest' unless
     container['image'].match?(%r{\Aghcr\.io/hannosirkel/servitium@sha256:[0-9a-f]{64}\z})
+  raise 'host port exposure is forbidden' if
+    container.fetch('ports').any? { |item| item.key?('hostPort') }
   raise 'container port exposure mismatch' unless container['ports'] == [{
     'name' => 'http', 'containerPort' => port, 'protocol' => 'TCP',
   }]
